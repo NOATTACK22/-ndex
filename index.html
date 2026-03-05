@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>NO ATTACK - Kayıt Sistemi</title>
+    <style>
+        body { background: #050505; color: #00ff41; font-family: 'Consolas', monospace; text-align: center; padding-top: 50px; }
+        .container { border: 1px solid #00ff41; display: inline-block; padding: 40px; background: #000; box-shadow: 0 0 15px #00ff41; }
+        input { background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 12px; margin: 10px; width: 300px; text-align: center; }
+        button { background: #00ff41; color: #000; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        button:hover { background: #008f11; color: #fff; }
+        #status { margin-top: 25px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>[ SYSTEM REGISTRATION ]</h1>
+    <input type="text" id="name" placeholder="İSİM SOYİSİM"><br>
+    <input type="email" id="email" placeholder="GMAIL ADRESİ (@gmail.com)"><br>
+    <button onclick="kayitEt()">ANAHTAR OLUŞTUR</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    const GITHUB_TOKEN = "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"; 
+    const REPO_OWNER = "NOATTACK22";
+    const REPO_NAME = "noatak1";
+    const FILE_PATH = "database.json";
+
+    async function kayitEt() {
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const status = document.getElementById("status");
+
+        if (!name || !email.endsWith("@gmail.com")) {
+            alert("Hata: Geçerli isim ve @gmail.com gerekli!");
+            return;
+        }
+
+        status.innerText = "Bağlantı kuruluyor...";
+
+        try {
+            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+            const res = await fetch(url, { headers: { "Authorization": `token ${GITHUB_TOKEN}` } });
+            const fileData = await res.json();
+            
+            // HATA ÇÖZÜMÜ: Boşlukları temizle ve UTF-8 destekli çöz
+            let base64Content = fileData.content.replace(/\s/g, '');
+            const db = JSON.parse(decodeURIComponent(escape(atob(base64Content))));
+
+            const newKey = "KEY-" + Math.floor(10000 + Math.random() * 90000);
+
+            db.kullanicilar[newKey] = {
+                "isim": name,
+                "email": email,
+                "ip": "0.0.0.0",
+                "pc_name": "Bilinmiyor",
+                "yetki": "IZINSIZ", // Otomatik izinsiz başlar
+                "last_login": "---"
+            };
+
+            // Geri yükleme (UTF-8 Güvenli)
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: {
